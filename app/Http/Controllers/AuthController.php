@@ -59,9 +59,41 @@ class AuthController extends Controller
             'data' => [
                 $user->only(['id', 'name', 'email'])
             ]
-        ]);
+        ], 200);
     }
-    public function logout(Request $request) {
-        
+    public function logout(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No user is logged in'
+            ], 401);
+        }
+
+        $user->currentAccessToken()->delete();
+        return response()->json([
+            'status' => 'success',
+            'message' => 'User Logged Out Successfully'
+        ], 201);
+    }
+
+    public function deleteAccount(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No User Logged In'
+            ], 401);
+        }
+        $user->tokens()->delete();
+        $user->tasks()->delete();
+        $user->delete();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'deleted Account Successfully'
+        ], 200);
     }
 }
