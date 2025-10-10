@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Task;
 use  Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -9,12 +10,36 @@ class TaskController extends Controller
 {
     public function index(Request $request)
     {
-        $tasks = $request->user()->tasks;
+        $query = $request->user()->tasks();
+        $validated = $request->validate([
+            'status' => 'sometimes|in:pending,completed',
+            'priority' => 'sometimes|in:low,medium,high',
+            'due_date' => 'sometimes|date',
+        ]);
+        if ($request->has('status')) {
+            $query->where('status', $validated['status']);
+        }
+
+        if ($request->has('priority')) {
+            $query->where('priority', $validated['priority']);
+        }
+        if ($request->has('due_date')) {
+            $query->whereDate('due_date', $validated['due_date']);
+        }
+
+        $tasks = $query->paginate(5);
+
+        if ($tasks->isEmpty()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'No tasks found',
+                'data' => []
+            ]);
+        }
         return response()->json([
             'status' => 'success',
-            'data' => [
-                'tasks' => $tasks
-            ]
+            'data' => $tasks
+
         ]);
     }
 
